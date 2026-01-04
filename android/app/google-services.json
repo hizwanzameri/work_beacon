@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "172275261392",
+    "project_id": "work-beacon",
+    "storage_bucket": "work-beacon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:172275261392:android:83093dbe1e1851a258a3d5",
+        "android_client_info": {
+          "package_name": "com.example.workbeacon"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAORahJPo-HtCxWdQy8etp67TFHhGXraCc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
