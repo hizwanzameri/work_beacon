@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:work_beacon/screens/staff/incidents.dart';
+import 'package:work_beacon/screens/admin/admin_dashboard.dart';
 import 'package:work_beacon/screens/staff/staff_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -159,16 +159,18 @@ class Login extends StatelessWidget {
                                     );
 
                                 // Check if user is staff and navigate accordingly
-                                final isStaff = email.toLowerCase().contains('staff') ||
-                                    email.toLowerCase() == 'staff@workbeacon.com';
-                                
+                                final isStaff =
+                                    email.toLowerCase().contains('staff') ||
+                                    email.toLowerCase() ==
+                                        'staff@workbeacon.com';
+
                                 // Navigate to the appropriate screen based on user role
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => isStaff
                                         ? StaffDashboard()
-                                        : IncidentsScreen(),
+                                        : AdminDashboard(),
                                   ),
                                 );
                               } on FirebaseAuthException catch (e) {

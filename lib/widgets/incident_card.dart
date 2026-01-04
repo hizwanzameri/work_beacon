@@ -11,6 +11,7 @@ class IncidentCard extends StatelessWidget {
   final String date;
   final String? photoUrl;
   final String documentId;
+  final VoidCallback? onTap;
 
   const IncidentCard({
     Key? key,
@@ -22,28 +23,31 @@ class IncidentCard extends StatelessWidget {
     required this.date,
     this.photoUrl,
     required this.documentId,
+    this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StaffIncidentDetails(
-              title: title,
-              id: id,
-              status: status,
-              description: description,
-              location: location,
-              date: date,
-              photoUrl: photoUrl,
-              documentId: documentId,
-            ),
-          ),
-        );
-      },
+      onTap:
+          onTap ??
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StaffIncidentDetails(
+                  title: title,
+                  id: id,
+                  status: status,
+                  description: description,
+                  location: location,
+                  date: date,
+                  photoUrl: photoUrl,
+                  documentId: documentId,
+                ),
+              ),
+            );
+          },
       borderRadius: BorderRadius.circular(14),
       child: Container(
         width: double.infinity,
@@ -138,7 +142,7 @@ class IncidentCard extends StatelessWidget {
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       ),
