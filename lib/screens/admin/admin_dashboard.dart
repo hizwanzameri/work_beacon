@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/admin/admin_all_incidents.dart';
+import 'package:work_beacon/screens/admin/admin_sendalertscreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:work_beacon/login/login.dart';
 
@@ -459,6 +460,12 @@ class App extends StatelessWidget {
         subtitle: 'Broadcast message',
         iconColor: const Color(0xFFFFECD4),
         icon: Icons.campaign_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AdminSendAlertScreen()),
+          );
+        },
       ),
       _QuickAction(
         title: 'Manage Incidents',

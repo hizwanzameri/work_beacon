@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:work_beacon/login/login.dart';
+import 'package:work_beacon/services/profile_service.dart';
 import 'staff_profile_edit.dart';
 
 class StaffProfile extends StatelessWidget {
@@ -10,13 +12,107 @@ class StaffProfile extends StatelessWidget {
   }
 }
 
-class Staffprofile extends StatelessWidget {
+class Staffprofile extends StatefulWidget {
+  @override
+  State<Staffprofile> createState() => _StaffprofileState();
+}
+
+class _StaffprofileState extends State<Staffprofile> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _profileData;
+  String _initials = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+
+      final profileData = await ProfileService.getUserProfile(user.uid);
+      if (profileData != null) {
+        setState(() {
+          _profileData = profileData;
+          _initials = _getInitials(profileData['fullName'] ?? '');
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading profile: ${e.toString()}')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+    try {
+      if (timestamp is Timestamp) {
+        final date = timestamp.toDate();
+        final months = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ];
+        return '${months[date.month - 1]} ${date.day}, ${date.year}';
+      }
+      return 'N/A';
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 600;
     final padding = isSmallScreen ? 16.0 : 24.0;
+
+    if (_isLoading) {
+      return Container(
+        width: double.infinity,
+        height: screenHeight,
+        decoration: BoxDecoration(color: const Color(0xFFF8FAFC)),
+        child: SafeArea(child: Center(child: CircularProgressIndicator())),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -87,12 +183,16 @@ class Staffprofile extends StatelessWidget {
                     ],
                   ),
                   InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
+                    onTap: () async {
+                      final result = await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => StaffProfileEdit(),
                         ),
                       );
+                      // Reload profile data if edit was successful
+                      if (result == true) {
+                        _loadProfileData();
+                      }
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
@@ -187,24 +287,53 @@ class Staffprofile extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(50),
                               ),
                             ),
-                            child: Center(
-                              child: Text(
-                                'SJ',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isSmallScreen ? 20 : 24,
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.33,
-                                  letterSpacing: 0.07,
-                                ),
-                              ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(50),
+                              child: _profileData?['profileImageUrl'] != null
+                                  ? Image.network(
+                                      _profileData!['profileImageUrl'],
+                                      width: isSmallScreen ? 80 : 96,
+                                      height: isSmallScreen ? 80 : 96,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Center(
+                                              child: Text(
+                                                _initials,
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: isSmallScreen
+                                                      ? 20
+                                                      : 24,
+                                                  fontFamily: 'Inter',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.33,
+                                                  letterSpacing: 0.07,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        _initials,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: isSmallScreen ? 20 : 24,
+                                          fontFamily: 'Inter',
+                                          fontWeight: FontWeight.w400,
+                                          height: 1.33,
+                                          letterSpacing: 0.07,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'Sarah Johnson',
+                            _profileData?['fullName'] ?? 'No Name',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: const Color(0xFF0E162B),
@@ -217,7 +346,7 @@ class Staffprofile extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Operations Manager',
+                            _profileData?['position'] ?? 'No Position',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: const Color(0xFF61738D),
@@ -230,7 +359,7 @@ class Staffprofile extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Staff ID: WB-12001',
+                            'Staff ID: ${_profileData?['staffId'] ?? 'N/A'}',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: const Color(0xFF90A1B8),
@@ -291,25 +420,30 @@ class Staffprofile extends StatelessWidget {
                           _buildInfoRow(
                             icon: Icons.person_outline,
                             label: 'Full Name',
-                            value: 'Sarah Johnson',
+                            value: _profileData?['fullName'] ?? 'N/A',
                           ),
                           SizedBox(height: 12),
                           _buildInfoRow(
                             icon: Icons.email_outlined,
                             label: 'Email',
-                            value: 'sarah.johnson@workbeacon.com',
+                            value: _profileData?['email'] ?? 'N/A',
                           ),
                           SizedBox(height: 12),
                           _buildInfoRow(
                             icon: Icons.phone_outlined,
                             label: 'Phone',
-                            value: '(555) 123-4567',
+                            value: _profileData?['phone']?.isNotEmpty == true
+                                ? _profileData!['phone']
+                                : 'N/A',
                           ),
                           SizedBox(height: 12),
                           _buildInfoRow(
                             icon: Icons.business_outlined,
                             label: 'Department',
-                            value: 'Operations',
+                            value:
+                                _profileData?['department']?.isNotEmpty == true
+                                ? _profileData!['department']
+                                : 'N/A',
                           ),
                         ],
                       ),
@@ -359,11 +493,24 @@ class Staffprofile extends StatelessWidget {
                             ),
                           ),
                           SizedBox(height: 12),
-                          _buildDetailRow('Join Date', 'January 15, 2023'),
+                          _buildDetailRow(
+                            'Join Date',
+                            _formatDate(_profileData?['joinDate']),
+                          ),
                           SizedBox(height: 8),
-                          _buildDetailRow('Position', 'Operations Manager'),
+                          _buildDetailRow(
+                            'Position',
+                            _profileData?['position']?.isNotEmpty == true
+                                ? _profileData!['position']
+                                : 'N/A',
+                          ),
                           SizedBox(height: 8),
-                          _buildDetailRow('Staff ID', 'WB-12001'),
+                          _buildDetailRow(
+                            'Staff ID',
+                            _profileData?['staffId']?.isNotEmpty == true
+                                ? _profileData!['staffId']
+                                : 'N/A',
+                          ),
                         ],
                       ),
                     ),

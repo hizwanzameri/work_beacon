@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/staff/staff_alert_details.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StaffAlertHistory extends StatelessWidget {
   @override
@@ -16,47 +17,74 @@ class Alerthistory extends StatefulWidget {
 class _AlerthistoryState extends State<Alerthistory> {
   String _selectedFilter = 'All';
 
-  // Sample alert data
-  final List<Map<String, dynamic>> _allAlerts = [
-    {
-      'type': 'Emergency',
-      'title': 'Building Evacuation Required',
-      'description':
-          'Due to a fire alarm activation in Building A, all staff must evacuate immediately. Please proceed to the designated assembly point in Parking Lot C.',
-      'time': '5 min ago',
-      'backgroundColor': const Color(0xFFFFECD4),
-      'borderColor': const Color(0xFFFFD6A7),
-      'textColor': const Color(0xFFC93400),
-    },
-    {
-      'type': 'Safety',
-      'title': 'Wet Floor - Warehouse Bay 7',
-      'description':
-          'Spilled liquid creating slip hazard near loading dock. Area has been cordoned off. Please use alternative routes.',
-      'time': '1 hour ago',
-      'backgroundColor': const Color(0xFFFEF9C2),
-      'borderColor': const Color(0xFFFEEF85),
-      'textColor': const Color(0xFFA65F00),
-    },
-    {
-      'type': 'Info',
-      'title': 'System Maintenance Tonight',
-      'description':
-          'The WorkBeacon system will be undergoing scheduled maintenance tonight from 10 PM to 2 AM. Please plan accordingly.',
-      'time': '3 hours ago',
-      'backgroundColor': const Color(0xFFDBEAFE),
-      'borderColor': const Color(0xFFBDDAFF),
-      'textColor': const Color(0xFF1447E6),
-    },
-  ];
+  // Helper function to format relative time
+  String _formatRelativeTime(Timestamp? timestamp) {
+    if (timestamp == null) return 'Unknown time';
 
-  List<Map<String, dynamic>> get _filteredAlerts {
-    if (_selectedFilter == 'All') {
-      return _allAlerts;
+    final now = DateTime.now();
+    final time = timestamp.toDate();
+    final difference = now.difference(time);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else {
+      return '${(difference.inDays / 7).floor()} week${(difference.inDays / 7).floor() > 1 ? 's' : ''} ago';
     }
-    return _allAlerts
-        .where((alert) => alert['type'] == _selectedFilter)
-        .toList();
+  }
+
+  // Helper function to get colors based on alert type
+  Map<String, Color> _getColorsForType(String alertType) {
+    switch (alertType.toLowerCase()) {
+      case 'emergency':
+        return {
+          'backgroundColor': const Color(0xFFFFECD4),
+          'borderColor': const Color(0xFFFFD6A7),
+          'textColor': const Color(0xFFC93400),
+        };
+      case 'safety':
+        return {
+          'backgroundColor': const Color(0xFFFEF9C2),
+          'borderColor': const Color(0xFFFEEF85),
+          'textColor': const Color(0xFFA65F00),
+        };
+      case 'info':
+        return {
+          'backgroundColor': const Color(0xFFDBEAFE),
+          'borderColor': const Color(0xFFBDDAFF),
+          'textColor': const Color(0xFF1447E6),
+        };
+      default:
+        return {
+          'backgroundColor': const Color(0xFFDBEAFE),
+          'borderColor': const Color(0xFFBDDAFF),
+          'textColor': const Color(0xFF1447E6),
+        };
+    }
+  }
+
+  // Helper function to map Firestore document to alert data
+  Map<String, dynamic> _mapDocumentToAlert(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final alertType = (data['alertType'] as String?) ?? 'Info';
+    final colors = _getColorsForType(alertType);
+
+    return {
+      'id': doc.id,
+      'type': alertType,
+      'title': (data['title'] as String?) ?? 'No Title',
+      'description': (data['description'] as String?) ?? '',
+      'time': _formatRelativeTime(data['createdAt'] as Timestamp?),
+      'backgroundColor': colors['backgroundColor']!,
+      'borderColor': colors['borderColor']!,
+      'textColor': colors['textColor']!,
+      'createdAt': data['createdAt'] as Timestamp?,
+    };
   }
 
   @override
@@ -207,8 +235,47 @@ class _AlerthistoryState extends State<Alerthistory> {
           ),
           // Content Section
           Expanded(
-            child: _filteredAlerts.isEmpty
-                ? Center(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('alerts')
+                  .where('status', isEqualTo: 'active')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 48,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Error loading alerts',
+                            style: TextStyle(
+                              color: const Color(0xFF45556C),
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
                     child: Padding(
                       padding: EdgeInsets.all(padding),
                       child: Text(
@@ -221,36 +288,82 @@ class _AlerthistoryState extends State<Alerthistory> {
                         ),
                       ),
                     ),
-                  )
-                : SingleChildScrollView(
-                    padding: EdgeInsets.all(padding),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ..._filteredAlerts.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final alert = entry.value;
-                          return Column(
-                            children: [
-                              if (index > 0) SizedBox(height: spacing),
-                              _AlertCard(
-                                type: alert['type'],
-                                title: alert['title'],
-                                description: alert['description'],
-                                time: alert['time'],
-                                backgroundColor: alert['backgroundColor'],
-                                borderColor: alert['borderColor'],
-                                textColor: alert['textColor'],
-                                padding: padding,
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ],
+                  );
+                }
+
+                // Map documents to alerts and sort by createdAt descending
+                final allAlerts =
+                    snapshot.data!.docs
+                        .map((doc) => _mapDocumentToAlert(doc))
+                        .toList()
+                      ..sort((a, b) {
+                        final aTime = a['createdAt'] as Timestamp?;
+                        final bTime = b['createdAt'] as Timestamp?;
+                        if (aTime == null && bTime == null) return 0;
+                        if (aTime == null) return 1;
+                        if (bTime == null) return -1;
+                        return bTime.compareTo(aTime); // Descending order
+                      });
+
+                // Filter by selected filter
+                final filteredAlerts = _selectedFilter == 'All'
+                    ? allAlerts
+                    : allAlerts
+                          .where(
+                            (alert) =>
+                                (alert['type'] as String).toLowerCase() ==
+                                _selectedFilter.toLowerCase(),
+                          )
+                          .toList();
+
+                if (filteredAlerts.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Text(
+                        'No alerts found',
+                        style: TextStyle(
+                          color: const Color(0xFF45556C),
+                          fontSize: 16,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
                     ),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  padding: EdgeInsets.all(padding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...filteredAlerts.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final alert = entry.value;
+                        return Column(
+                          children: [
+                            if (index > 0) SizedBox(height: spacing),
+                            _AlertCard(
+                              type: alert['type'],
+                              title: alert['title'],
+                              description: alert['description'],
+                              time: alert['time'],
+                              backgroundColor: alert['backgroundColor'],
+                              borderColor: alert['borderColor'],
+                              textColor: alert['textColor'],
+                              padding: padding,
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),

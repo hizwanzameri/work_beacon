@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/admin/admin_dashboard.dart';
 import 'package:work_beacon/screens/staff/staff_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:work_beacon/services/profile_service.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -172,11 +173,19 @@ class _LoginState extends State<Login> {
                                           .trim();
 
                                       // Firebase Authentication Sign-In
-                                      await FirebaseAuth.instance
+                                      final userCredential = await FirebaseAuth
+                                          .instance
                                           .signInWithEmailAndPassword(
                                             email: email,
                                             password: password,
                                           );
+
+                                      // Initialize user profile if it doesn't exist
+                                      if (userCredential.user != null) {
+                                        await ProfileService.initializeUserProfile(
+                                          userCredential.user!,
+                                        );
+                                      }
 
                                       // Check if user is staff and navigate accordingly
                                       final isStaff =
