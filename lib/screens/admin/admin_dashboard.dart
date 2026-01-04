@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/admin/admin_all_incidents.dart';
 import 'package:work_beacon/screens/admin/admin_sendalertscreen.dart';
+import 'package:work_beacon/screens/admin/admin_staff_directory.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:work_beacon/login/login.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -179,37 +181,63 @@ class App extends StatelessWidget {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      _buildStatCard(
-                        context: context,
-                        title: '8',
-                        subtitle: 'Active Alerts',
-                        gradient: LinearGradient(
-                          begin: Alignment(0.00, 0.00),
-                          end: Alignment(1.00, 1.00),
-                          colors: [
-                            const Color(0xFFFF6800),
-                            const Color(0xFFF44900),
-                          ],
-                        ),
-                        iconColor: const Color(0xFFFFECD4),
-                        isSmallScreen: isSmallScreen,
-                        icon: Icons.warning_amber_rounded,
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('alerts')
+                            .where('status', isEqualTo: 'active')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          int activeAlertsCount = 0;
+                          if (snapshot.hasData) {
+                            activeAlertsCount = snapshot.data!.docs.length;
+                          }
+
+                          return _buildStatCard(
+                            context: context,
+                            title: '$activeAlertsCount',
+                            subtitle: 'Active Alerts',
+                            gradient: LinearGradient(
+                              begin: Alignment(0.00, 0.00),
+                              end: Alignment(1.00, 1.00),
+                              colors: [
+                                const Color(0xFFFF6800),
+                                const Color(0xFFF44900),
+                              ],
+                            ),
+                            iconColor: const Color(0xFFFFECD4),
+                            isSmallScreen: isSmallScreen,
+                            icon: Icons.warning_amber_rounded,
+                          );
+                        },
                       ),
-                      _buildStatCard(
-                        context: context,
-                        title: '13',
-                        subtitle: 'Open Incidents',
-                        gradient: LinearGradient(
-                          begin: Alignment(0.00, 0.00),
-                          end: Alignment(1.00, 1.00),
-                          colors: [
-                            const Color(0xFF2B7FFF),
-                            const Color(0xFF155CFB),
-                          ],
-                        ),
-                        iconColor: const Color(0xFFDAEAFE),
-                        isSmallScreen: isSmallScreen,
-                        icon: Icons.report_problem_rounded,
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('staff_incidents')
+                            .where('status', isEqualTo: 'pending')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          int openIncidentsCount = 0;
+                          if (snapshot.hasData) {
+                            openIncidentsCount = snapshot.data!.docs.length;
+                          }
+
+                          return _buildStatCard(
+                            context: context,
+                            title: '$openIncidentsCount',
+                            subtitle: 'Open Incidents',
+                            gradient: LinearGradient(
+                              begin: Alignment(0.00, 0.00),
+                              end: Alignment(1.00, 1.00),
+                              colors: [
+                                const Color(0xFF2B7FFF),
+                                const Color(0xFF155CFB),
+                              ],
+                            ),
+                            iconColor: const Color(0xFFDAEAFE),
+                            isSmallScreen: isSmallScreen,
+                            icon: Icons.report_problem_rounded,
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -298,16 +326,30 @@ class App extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: 12),
-                        Text(
-                          '24',
-                          style: TextStyle(
-                            color: const Color(0xFF0E162B),
-                            fontSize: isSmallScreen ? 20 : 24,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w400,
-                            height: 1.33,
-                            letterSpacing: 0.07,
-                          ),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('alerts')
+                              .where('status', isEqualTo: 'active')
+                              .where('requireAcknowledgment', isEqualTo: true)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            int pendingAcksCount = 0;
+                            if (snapshot.hasData) {
+                              pendingAcksCount = snapshot.data!.docs.length;
+                            }
+
+                            return Text(
+                              '$pendingAcksCount',
+                              style: TextStyle(
+                                color: const Color(0xFF0E162B),
+                                fontSize: isSmallScreen ? 20 : 24,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w400,
+                                height: 1.33,
+                                letterSpacing: 0.07,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -484,6 +526,12 @@ class App extends StatelessWidget {
         subtitle: 'Manage team',
         iconColor: const Color(0xFFDCFCE7),
         icon: Icons.people_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AdminStaffDirectory()),
+          );
+        },
       ),
     ];
 

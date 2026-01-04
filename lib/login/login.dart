@@ -185,25 +185,28 @@ class _LoginState extends State<Login> {
                                         await ProfileService.initializeUserProfile(
                                           userCredential.user!,
                                         );
+
+                                        // Get user profile to determine user type
+                                        final profileData =
+                                            await ProfileService.getUserProfile(
+                                              userCredential.user!.uid,
+                                            );
+
+                                        // Check user type from profile, default to staff if not found
+                                        final userType =
+                                            profileData?['userType'] ?? 'staff';
+                                        final isStaff = userType == 'staff';
+
+                                        // Navigate to the appropriate screen based on user role
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => isStaff
+                                                ? StaffDashboard()
+                                                : AdminDashboard(),
+                                          ),
+                                        );
                                       }
-
-                                      // Check if user is staff and navigate accordingly
-                                      final isStaff =
-                                          email.toLowerCase().contains(
-                                            'staff',
-                                          ) ||
-                                          email.toLowerCase() ==
-                                              'staff@workbeacon.com';
-
-                                      // Navigate to the appropriate screen based on user role
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => isStaff
-                                              ? StaffDashboard()
-                                              : AdminDashboard(),
-                                        ),
-                                      );
                                     } on FirebaseAuthException catch (e) {
                                       setState(() {
                                         _isLoading = false;

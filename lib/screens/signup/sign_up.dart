@@ -1,6 +1,7 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUp extends StatefulWidget {
   @override
@@ -53,6 +54,9 @@ class _SignUpState extends State<SignUp> {
       if (userCred.user != null) {
         await userCred.user!.updateDisplayName(_fullNameController.text.trim());
         await userCred.user!.reload();
+        
+        // Initialize user profile with form data
+        await _initializeUserProfile(userCred.user!);
       }
 
       // Optionally send email verification
@@ -75,6 +79,44 @@ class _SignUpState extends State<SignUp> {
       _showMessage('An unexpected error occurred.');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _initializeUserProfile(User user) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final profileRef = firestore.collection('staff_profiles').doc(user.uid);
+      
+      // Check if profile already exists
+      final profileDoc = await profileRef.get();
+      
+      if (!profileDoc.exists) {
+        // Create new profile with form data
+        await profileRef.set({
+          'uid': user.uid,
+          'email': user.email ?? '',
+          'fullName': _fullNameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'department': '',
+          'position': '',
+          'staffId': '',
+          'userType': 'staff', // Default to staff for signup page
+          'joinDate': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Profile exists, update with form data if needed
+        await profileRef.update({
+          'fullName': _fullNameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'userType': 'staff', // Ensure userType is set to staff for signup page
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      // Log error but don't throw - allow registration to proceed
+      print('Error initializing user profile: $e');
     }
   }
 

@@ -280,7 +280,7 @@ class _SendalertscreenState extends State<Sendalertscreen> {
                   children: [
                     SizedBox(height: 16),
                     // Alert Type Section
-                    _buildAlertTypeSection(context, isSmallScreen),
+                    _buildAlertTypeSection(context),
                     SizedBox(height: 16),
                     // Alert Title Section
                     _buildTextFieldSection(
@@ -327,7 +327,7 @@ class _SendalertscreenState extends State<Sendalertscreen> {
     );
   }
 
-  Widget _buildAlertTypeSection(BuildContext context, bool isSmallScreen) {
+  Widget _buildAlertTypeSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -343,27 +343,30 @@ class _SendalertscreenState extends State<Sendalertscreen> {
           ),
         ),
         SizedBox(height: 8),
-        isSmallScreen
-            ? Column(
-                children: [
-                  _buildAlertTypeButton('Emergency'),
-                  SizedBox(height: 8),
-                  _buildAlertTypeButton('Safety'),
-                  SizedBox(height: 8),
-                  _buildAlertTypeButton('Info'),
-                ],
-              )
-            : Row(
-                children: [
-                  Expanded(child: _buildAlertTypeButton('Emergency')),
-                  SizedBox(width: 8),
-                  Expanded(child: _buildAlertTypeButton('Safety')),
-                  SizedBox(width: 8),
-                  Expanded(child: _buildAlertTypeButton('Info')),
-                ],
-              ),
+        Row(
+          children: [
+            Expanded(child: _buildAlertTypeButton('Emergency')),
+            SizedBox(width: 8),
+            Expanded(child: _buildAlertTypeButton('Safety')),
+            SizedBox(width: 8),
+            Expanded(child: _buildAlertTypeButton('Info')),
+          ],
+        ),
       ],
     );
+  }
+
+  IconData _getAlertTypeIcon(String label) {
+    switch (label) {
+      case 'Emergency':
+        return Icons.warning_rounded;
+      case 'Safety':
+        return Icons.shield_rounded;
+      case 'Info':
+        return Icons.info_rounded;
+      default:
+        return Icons.circle;
+    }
   }
 
   Widget _buildAlertTypeButton(String label) {
@@ -393,7 +396,14 @@ class _SendalertscreenState extends State<Sendalertscreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(height: 4),
+            Icon(
+              _getAlertTypeIcon(label),
+              color: isSelected
+                  ? const Color(0xFF155CFB)
+                  : const Color(0xFF45556C),
+              size: 24,
+            ),
+            SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,

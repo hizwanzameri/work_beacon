@@ -34,6 +34,13 @@ class ProfileService {
             .join(' ');
       }
 
+      // Determine user type from email (fallback logic for existing users)
+      String userType = 'staff'; // Default to staff
+      final email = user.email?.toLowerCase() ?? '';
+      if (email.contains('admin') || email == 'admin@workbeacon.com') {
+        userType = 'admin';
+      }
+
       // Create new profile with default values
       await _firestore.collection('staff_profiles').doc(user.uid).set({
         'uid': user.uid,
@@ -43,6 +50,7 @@ class ProfileService {
         'department': '',
         'position': '',
         'staffId': '',
+        'userType': userType,
         'joinDate': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

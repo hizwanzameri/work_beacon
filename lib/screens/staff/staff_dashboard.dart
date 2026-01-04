@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:work_beacon/services/profile_service.dart';
+import 'package:work_beacon/login/login.dart';
 import 'staff_profile.dart';
 import 'staff_report_incident.dart';
 import 'incidents.dart';
@@ -121,7 +122,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                     ),
                                     SizedBox(height: 4),
                                     Text(
-                                      _isLoading ? 'Loading...' : 'Hi, $_userName',
+                                      _isLoading
+                                          ? 'Loading...'
+                                          : 'Hi, $_userName',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 24,
@@ -134,53 +137,69 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                   ],
                                 ),
                               ),
-                              Container(
-                                width: 24,
-                                height: 24,
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      clipBehavior: Clip.antiAlias,
-                                      decoration: BoxDecoration(),
-                                      child: Icon(
-                                        Icons.notifications_outlined,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 8,
-                                      top: -4,
-                                      child: Container(
-                                        width: 20,
-                                        height: 20,
-                                        decoration: ShapeDecoration(
-                                          color: const Color(0xFFFF6900),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              24675400,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '3',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontFamily: 'Inter',
-                                              fontWeight: FontWeight.w400,
-                                              height: 1.33,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              IconButton(
+                                icon: Icon(
+                                  Icons.logout,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
+                                onPressed: () async {
+                                  // Show confirmation dialog
+                                  final shouldLogout = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Logout'),
+                                      content: Text(
+                                        'Are you sure you want to logout?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          child: Text(
+                                            'Logout',
+                                            style: TextStyle(
+                                              color: const Color(0xFFE7000B),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (shouldLogout == true) {
+                                    try {
+                                      // Sign out from Firebase
+                                      await FirebaseAuth.instance.signOut();
+
+                                      // Navigate to login screen and clear navigation stack
+                                      Navigator.of(context).pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                          builder: (context) => Login(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                    } catch (e) {
+                                      // Show error if logout fails
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Error logging out: ${e.toString()}',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                tooltip: 'Logout',
                               ),
                             ],
                           ),
@@ -251,46 +270,76 @@ class _StaffDashboardState extends State<StaffDashboard> {
                               ),
                               SizedBox(width: 12),
                               Expanded(
-                                child: Container(
-                                  padding: EdgeInsets.all(12.73),
-                                  decoration: ShapeDecoration(
-                                    color: Colors.white.withValues(alpha: 0.10),
-                                    shape: RoundedRectangleBorder(
-                                      side: BorderSide(
-                                        width: 0.74,
-                                        color: const Color(0x33FFFEFE),
-                                      ),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'My Reports',
-                                        style: TextStyle(
-                                          color: const Color(0xFFDAEAFE),
-                                          fontSize: 12,
-                                          fontFamily: 'Inter',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.33,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        '3',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontFamily: 'Inter',
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.33,
-                                          letterSpacing: 0.07,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                child: Builder(
+                                  builder: (context) {
+                                    final user =
+                                        FirebaseAuth.instance.currentUser;
+                                    return StreamBuilder<QuerySnapshot>(
+                                      stream: user != null
+                                          ? FirebaseFirestore.instance
+                                                .collection('staff_incidents')
+                                                .where(
+                                                  'reportedBy',
+                                                  isEqualTo: user.uid,
+                                                )
+                                                .snapshots()
+                                          : Stream<QuerySnapshot>.empty(),
+                                      builder: (context, snapshot) {
+                                        int myReportsCount = 0;
+                                        if (snapshot.hasData) {
+                                          myReportsCount =
+                                              snapshot.data!.docs.length;
+                                        }
+
+                                        return Container(
+                                          padding: EdgeInsets.all(12.73),
+                                          decoration: ShapeDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.10,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              side: BorderSide(
+                                                width: 0.74,
+                                                color: const Color(0x33FFFEFE),
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'My Reports',
+                                                style: TextStyle(
+                                                  color: const Color(
+                                                    0xFFDAEAFE,
+                                                  ),
+                                                  fontSize: 12,
+                                                  fontFamily: 'Inter',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.33,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                '$myReportsCount',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 24,
+                                                  fontFamily: 'Inter',
+                                                  fontWeight: FontWeight.w400,
+                                                  height: 1.33,
+                                                  letterSpacing: 0.07,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
                               ),
                             ],
