@@ -13,6 +13,16 @@ class AdminAllIncidentsScreen extends StatefulWidget {
 class _AdminAllIncidentsScreenState extends State<AdminAllIncidentsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchKeyword = '';
+  String _selectedFilter = 'All';
+
+  final List<String> _categories = [
+    'All',
+    'Safety Hazard',
+    'Equipment Malfunction',
+    'Security Issue',
+    'Maintenance Request',
+    'Other',
+  ];
 
   @override
   void dispose() {
@@ -73,58 +83,101 @@ class _AdminAllIncidentsScreenState extends State<AdminAllIncidentsScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60),
+          preferredSize: Size.fromHeight(120),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by keyword...',
-                prefixIcon: Icon(Icons.search, color: const Color(0xFF61738D)),
-                suffixIcon: _searchKeyword.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear, color: const Color(0xFF61738D)),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchKeyword = '';
-                          });
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: const Color(0xFFF0F4F9),
-                    width: 1,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by keyword...',
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: const Color(0xFF61738D),
+                    ),
+                    suffixIcon: _searchKeyword.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              color: const Color(0xFF61738D),
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchKeyword = '';
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFFF0F4F9),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFFF0F4F9),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFF2B7FFF),
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchKeyword = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 12),
+                // Filter Buttons
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ..._categories.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final category = entry.value;
+                        final isSelected = _selectedFilter == category;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _FilterButton(
+                              label: category,
+                              isSelected: isSelected,
+                              onTap: () {
+                                setState(() {
+                                  _selectedFilter = category;
+                                });
+                              },
+                            ),
+                            if (index < _categories.length - 1)
+                              SizedBox(width: 8),
+                          ],
+                        );
+                      }).toList(),
+                    ],
                   ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: const Color(0xFFF0F4F9),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: const Color(0xFF2B7FFF),
-                    width: 1.5,
-                  ),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchKeyword = value;
-                });
-              },
+              ],
             ),
           ),
         ),
@@ -202,9 +255,19 @@ class _AdminAllIncidentsScreenState extends State<AdminAllIncidentsScreen> {
                 return bTime.compareTo(aTime); // Descending order
               });
 
-            // Filter incidents based on search keyword
+            // Filter incidents based on search keyword and category
             final filteredIncidents = allIncidents.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
+
+              // Filter by category
+              if (_selectedFilter != 'All') {
+                final category = (data['category'] as String?) ?? '';
+                if (category != _selectedFilter) {
+                  return false;
+                }
+              }
+
+              // Filter by search keyword
               return _matchesSearch(data, doc.id);
             }).toList();
 
@@ -308,6 +371,49 @@ class _AdminAllIncidentsScreenState extends State<AdminAllIncidentsScreen> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: ShapeDecoration(
+          color: isSelected ? const Color(0xFF155DFC) : const Color(0xFFF1F5F9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : const Color(0xFF45556C),
+              fontSize: 14,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+              height: 1.43,
+              letterSpacing: -0.15,
+            ),
+          ),
         ),
       ),
     );

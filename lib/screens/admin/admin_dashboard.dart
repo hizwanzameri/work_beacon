@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/admin/admin_all_incidents.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:work_beacon/login/login.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -87,39 +89,65 @@ class App extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Stack(
+                  Row(
                     children: [
-                      Icon(
-                        Icons.notifications_outlined,
-                        size: 24,
-                        color: const Color(0xFF61738D),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: ShapeDecoration(
-                            color: const Color(0xFFFF6900),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      Stack(
+                        children: [
+                          Icon(
+                            Icons.notifications_outlined,
+                            size: 24,
+                            color: const Color(0xFF61738D),
                           ),
-                          child: Center(
-                            child: Text(
-                              '5',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w600,
-                                height: 1.0,
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: ShapeDecoration(
+                                color: const Color(0xFFFF6900),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '5',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.0,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                      SizedBox(width: 16),
+                      IconButton(
+                        icon: Icon(
+                          Icons.logout,
+                          size: 24,
+                          color: const Color(0xFF61738D),
                         ),
+                        onPressed: () async {
+                          try {
+                            await FirebaseAuth.instance.signOut();
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => Login()),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error signing out: $e')),
+                            );
+                          }
+                        },
+                        tooltip: 'Logout',
                       ),
                     ],
                   ),

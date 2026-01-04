@@ -26,6 +26,21 @@ class IncidentCard extends StatelessWidget {
     this.onTap,
   }) : super(key: key);
 
+  static Color _getStatusColor(String status) {
+    final statusLower = status.toLowerCase();
+    if (statusLower == 'open' || statusLower == 'pending') {
+      return const Color(0xFFF59E0B); // Orange/Amber for open/pending
+    } else if (statusLower == 'in progress' || statusLower == 'in-progress') {
+      return const Color(0xFF3B82F6); // Blue for in progress
+    } else if (statusLower == 'resolved' || statusLower == 'closed' || statusLower == 'completed') {
+      return const Color(0xFF10B981); // Green for resolved
+    } else if (statusLower == 'cancelled' || statusLower == 'rejected') {
+      return const Color(0xFFEF4444); // Red for cancelled/rejected
+    } else {
+      return const Color(0xFF61738D); // Default gray
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -88,16 +103,38 @@ class IncidentCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              id,
-              style: TextStyle(
-                color: const Color(0xFF61738D),
-                fontSize: 14,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w400,
-                height: 1.43,
-                letterSpacing: -0.15,
-              ),
+            Row(
+              children: [
+                Text(
+                  id,
+                  style: TextStyle(
+                    color: const Color(0xFF61738D),
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
+                    height: 1.43,
+                    letterSpacing: -0.15,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w500,
+                      height: 1.33,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Text(

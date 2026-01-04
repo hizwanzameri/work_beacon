@@ -3,9 +3,22 @@ import 'package:work_beacon/screens/admin/admin_dashboard.dart';
 import 'package:work_beacon/screens/staff/staff_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class Login extends StatelessWidget {
+class Login extends StatefulWidget {
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,104 +158,139 @@ class Login extends StatelessWidget {
                           ),
                           SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: () async {
-                              try {
-                                final email = _emailController.text.trim();
-                                final password = _passwordController.text
-                                    .trim();
+                            onPressed: _isLoading
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
 
-                                // Firebase Authentication Sign-In
-                                await FirebaseAuth.instance
-                                    .signInWithEmailAndPassword(
-                                      email: email,
-                                      password: password,
-                                    );
+                                    try {
+                                      final email = _emailController.text
+                                          .trim();
+                                      final password = _passwordController.text
+                                          .trim();
 
-                                // Check if user is staff and navigate accordingly
-                                final isStaff =
-                                    email.toLowerCase().contains('staff') ||
-                                    email.toLowerCase() ==
-                                        'staff@workbeacon.com';
+                                      // Firebase Authentication Sign-In
+                                      await FirebaseAuth.instance
+                                          .signInWithEmailAndPassword(
+                                            email: email,
+                                            password: password,
+                                          );
 
-                                // Navigate to the appropriate screen based on user role
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => isStaff
-                                        ? StaffDashboard()
-                                        : AdminDashboard(),
-                                  ),
-                                );
-                              } on FirebaseAuthException catch (e) {
-                                String errorMessage;
+                                      // Check if user is staff and navigate accordingly
+                                      final isStaff =
+                                          email.toLowerCase().contains(
+                                            'staff',
+                                          ) ||
+                                          email.toLowerCase() ==
+                                              'staff@workbeacon.com';
 
-                                switch (e.code) {
-                                  case 'user-not-found':
-                                    errorMessage =
-                                        'No user found for this email.';
-                                    break;
-                                  case 'wrong-password':
-                                    errorMessage = 'Incorrect password.';
-                                    break;
-                                  case 'invalid-email':
-                                    errorMessage = 'Invalid email address.';
-                                    break;
-                                  default:
-                                    errorMessage =
-                                        'An error occurred. Please try again.';
-                                }
+                                      // Navigate to the appropriate screen based on user role
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => isStaff
+                                              ? StaffDashboard()
+                                              : AdminDashboard(),
+                                        ),
+                                      );
+                                    } on FirebaseAuthException catch (e) {
+                                      setState(() {
+                                        _isLoading = false;
+                                      });
 
-                                // Show error dialog
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('Login Failed'),
-                                    content: Text(errorMessage),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text('OK'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              } catch (e) {
-                                // Handle other errors
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('Login Failed'),
-                                    content: Text(
-                                      'An unexpected error occurred.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text('OK'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            },
+                                      String errorMessage;
+
+                                      switch (e.code) {
+                                        case 'user-not-found':
+                                          errorMessage =
+                                              'No user found for this email.';
+                                          break;
+                                        case 'wrong-password':
+                                          errorMessage = 'Incorrect password.';
+                                          break;
+                                        case 'invalid-email':
+                                          errorMessage =
+                                              'Invalid email address.';
+                                          break;
+                                        default:
+                                          errorMessage =
+                                              'An error occurred. Please try again.';
+                                      }
+
+                                      // Show error dialog
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text('Login Failed'),
+                                          content: Text(errorMessage),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: Text('OK'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      setState(() {
+                                        _isLoading = false;
+                                      });
+
+                                      // Handle other errors
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text('Login Failed'),
+                                          content: Text(
+                                            'An unexpected error occurred.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: Text('OK'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF155DFC),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               padding: EdgeInsets.symmetric(vertical: 14),
+                              disabledBackgroundColor: const Color(
+                                0xFF155DFC,
+                              ).withOpacity(0.6),
                             ),
                             child: Center(
-                              child: Text(
-                                'Login',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: -0.31,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Login',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: -0.31,
+                                      ),
+                                    ),
                             ),
                           ),
                           SizedBox(height: 16),
@@ -353,7 +401,7 @@ class Login extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'Staff: staff@workbeacon.com',
+                'Staff: staff1@workbeacon.com',
                 style: TextStyle(
                   color: const Color(0xFF45556C),
                   fontSize: 12,
@@ -362,7 +410,7 @@ class Login extends StatelessWidget {
                 ),
               ),
               Text(
-                'Admin: admin@workbeacon.com',
+                'Admin: admin1@workbeacon.com',
                 style: TextStyle(
                   color: const Color(0xFF45556C),
                   fontSize: 12,
@@ -371,7 +419,7 @@ class Login extends StatelessWidget {
                 ),
               ),
               Text(
-                'Password: any',
+                'Password: abcd1234',
                 style: TextStyle(
                   color: const Color(0xFF45556C),
                   fontSize: 12,
