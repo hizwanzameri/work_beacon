@@ -1,4 +1,12 @@
-# WorkBeacon
+# WorkBeacon By MemeMaker
+
+MemeMaker consist of:
+1)	MUHAMAD ARIF BIN JOHAR (SX211702ECRHF04) 
+2)	MOHAMED FIRDAUS BIN ZAIDI (SX200604ECJHS04)
+3)	MUHAMMAD HIZWAN BIN ZAMERI (SX211682ECJHF03)
+4)	MUHAMMAD HAZIM BIN ADNAN (SX200750ECJHS04)
+
+For SECJ3623 PENGATURCARAAN APLIKASI MOBIL 2025/2026-01
 
 A Flutter mobile app for workplace safety, incident reporting, and staff location visibility. **WorkBeacon** lets staff report incidents (with photos and categories) and view alerts, while admins can manage incidents, send alerts, browse a staff directory, and view live staff locations on a map.
 
