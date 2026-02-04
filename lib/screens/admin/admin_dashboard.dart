@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:work_beacon/screens/admin/admin_all_incidents.dart';
 import 'package:work_beacon/screens/admin/admin_sendalertscreen.dart';
 import 'package:work_beacon/screens/admin/admin_staff_directory.dart';
+import 'package:work_beacon/screens/admin/admin_live_locations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:work_beacon/login/login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -530,6 +531,18 @@ class App extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => AdminStaffDirectory()),
+          );
+        },
+      ),
+      _QuickAction(
+        title: 'Staff Live Location',
+        subtitle: 'View staff on map',
+        iconColor: const Color(0xFFE0E7FF),
+        icon: Icons.location_on_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AdminLiveLocationsScreen()),
           );
         },
       ),

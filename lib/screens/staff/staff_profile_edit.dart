@@ -21,7 +21,6 @@ class Staffprofileedit extends StatefulWidget {
 class _StaffprofileeditState extends State<Staffprofileedit> {
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _departmentController = TextEditingController();
   final _imagePicker = ImagePicker();
 
   bool _isLoading = true;
@@ -30,6 +29,18 @@ class _StaffprofileeditState extends State<Staffprofileedit> {
   XFile? _selectedImage;
   Map<String, dynamic>? _profileData;
   String _initials = '';
+  String? _selectedDepartment;
+
+  final List<String> _departments = [
+    'IT',
+    'HR',
+    'Finance',
+    'Operations',
+    'Sales',
+    'Marketing',
+    'Engineering',
+    'Support',
+  ];
 
   @override
   void initState() {
@@ -41,7 +52,6 @@ class _StaffprofileeditState extends State<Staffprofileedit> {
   void dispose() {
     _fullNameController.dispose();
     _phoneController.dispose();
-    _departmentController.dispose();
     super.dispose();
   }
 
@@ -57,11 +67,18 @@ class _StaffprofileeditState extends State<Staffprofileedit> {
 
       final profileData = await ProfileService.getUserProfile(user.uid);
       if (profileData != null) {
+        final department = profileData['department'];
         setState(() {
           _profileData = profileData;
           _fullNameController.text = profileData['fullName'] ?? '';
           _phoneController.text = profileData['phone'] ?? '';
-          _departmentController.text = profileData['department'] ?? '';
+          // Only set department if it exists in the predefined list
+          _selectedDepartment =
+              (department != null &&
+                  department is String &&
+                  _departments.contains(department))
+              ? department
+              : null;
           _profileImageUrl = profileData['profileImageUrl'];
           _initials = _getInitials(profileData['fullName'] ?? '');
           _isLoading = false;
@@ -179,7 +196,7 @@ class _StaffprofileeditState extends State<Staffprofileedit> {
           .update({
             'fullName': _fullNameController.text.trim(),
             'phone': _phoneController.text.trim(),
-            'department': _departmentController.text.trim(),
+            'department': _selectedDepartment,
             if (imageUrl != null) 'profileImageUrl': imageUrl,
             'updatedAt': FieldValue.serverTimestamp(),
           });
@@ -681,43 +698,65 @@ class _StaffprofileeditState extends State<Staffprofileedit> {
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  TextField(
-                                    controller: _departmentController,
-                                    style: TextStyle(
-                                      color: const Color(0xFF0E162B),
-                                      fontSize: 16,
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.50,
-                                      letterSpacing: -0.31,
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
                                     ),
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      fillColor: const Color(0xFFF8FAFC),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide(
+                                    decoration: ShapeDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      shape: RoundedRectangleBorder(
+                                        side: BorderSide(
                                           width: 0.74,
                                           color: const Color(0xFFE1E8F0),
                                         ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide(
-                                          width: 0.74,
-                                          color: const Color(0xFFE1E8F0),
-                                        ),
                                       ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide(
-                                          width: 0.74,
-                                          color: const Color(0xFF155DFC),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedDepartment,
+                                        hint: Text(
+                                          'Select department',
+                                          style: TextStyle(
+                                            color: const Color(0xFF90A1B8),
+                                            fontSize: 16,
+                                            fontFamily: 'Inter',
+                                            fontWeight: FontWeight.w400,
+                                          ),
                                         ),
+                                        isExpanded: true,
+                                        style: TextStyle(
+                                          color: const Color(0xFF0E162B),
+                                          fontSize: 16,
+                                          fontFamily: 'Inter',
+                                          fontWeight: FontWeight.w400,
+                                          height: 1.50,
+                                          letterSpacing: -0.31,
+                                        ),
+                                        dropdownColor: Colors.white,
+                                        items: _departments.map((
+                                          String department,
+                                        ) {
+                                          return DropdownMenuItem<String>(
+                                            value: department,
+                                            child: Text(
+                                              department,
+                                              style: TextStyle(
+                                                color: const Color(0xFF0E162B),
+                                                fontSize: 16,
+                                                fontFamily: 'Inter',
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            _selectedDepartment = newValue;
+                                          });
+                                        },
                                       ),
                                     ),
                                   ),

@@ -11,7 +11,9 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController(
+    text: 'abcd1234',
+  );
   bool _isLoading = false;
 
   @override
@@ -307,20 +309,6 @@ class _LoginState extends State<Login> {
                           ),
                           SizedBox(height: 16),
                           Divider(color: const Color(0xFFE1E8F0)),
-                          SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              'Create Staff Account',
-                              style: TextStyle(
-                                color: const Color(0xFF314157),
-                                fontSize: 16,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: -0.31,
-                              ),
-                            ),
-                          ),
                           SizedBox(height: 16),
                           _buildDemoCredentials(context),
                         ],
